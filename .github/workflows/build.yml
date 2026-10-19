@@ -130,6 +130,11 @@ jobs:
       PKG_CONFIG_ALLOW_CROSS: '1'
     steps:
       - uses: actions/checkout@v4
+        with:
+          # 版本说明自动拼装要 `git log <上一tag>..<本次tag>`：
+          # 浅克隆 + 无 tags 拿不到区间 ⇒ 生成器静默降级、旧说明原样保留 ⇒ 门禁必红。
+          fetch-depth: 0
+          fetch-tags: true
 
       - uses: actions/setup-node@v4
         with:
@@ -222,6 +227,11 @@ jobs:
           VER=$(node -p "require('./package.json').version")
           echo "VER=$VER" >> "$GITHUB_ENV"
           echo "stamped version: $VER"
+          # 手动触发时仓库里没有 v$VER 这个 tag，说明生成器的自动拼装区间会失败
+          # （静默降级 ⇒ 旧说明原样保留 ⇒ 门禁红）。本地补打一个，再传给生成器。
+          if ! git rev-parse -q --verify "refs/tags/v$VER" >/dev/null; then
+            git tag "v$VER"
+          fi
           # 打包内置的「本版说明」（离线兜底，`src/data/release-notes.json`）必须跟着版本走：
           # 它由 `docs/releases/<版本>.md` 或提交分组推导，**不重生成就是上一版的内容**
           # （门禁 `check:scope` 会比对版本号，不重生成直接红）。
