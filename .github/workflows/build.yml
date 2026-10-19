@@ -225,7 +225,10 @@ jobs:
           # 打包内置的「本版说明」（离线兜底，`src/data/release-notes.json`）必须跟着版本走：
           # 它由 `docs/releases/<版本>.md` 或提交分组推导，**不重生成就是上一版的内容**
           # （门禁 `check:scope` 会比对版本号，不重生成直接红）。
-          node scripts/gen-release-notes.mjs --json src/data/release-notes.json
+          # 手动触发（无 tag）时版本是当时时刻戳，而手写说明挂在旧 tag 名下 ——
+          # 直接跑会生成「说明版本 ≠ 应用版本」的产物，门禁必红。
+          # ⇒ 显式传刚打好的应用版本号，强制走提交分组自动拼装，版本永远一致。
+          node scripts/gen-release-notes.mjs --tag "v$VER" --json src/data/release-notes.json
 
       # `tauri.conf.json` 的 `createUpdaterArtifacts: true` 使签名私钥成为**打包硬依赖**：
       # 少了它，`tauri build` 会先跑完 ~5 分钟的 Rust 编译，最后才抛一句难定位的错。
